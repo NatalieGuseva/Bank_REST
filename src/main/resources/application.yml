@@ -1,8 +1,82 @@
-#
-# application.yml — главный конфигурационный файл Spring Boot.
+# Настройки базы данных
+datasource:
+  url: jdbc:postgresql://localhost:5432/bankcards
+  username: postgres
+  password: postgres
+  driver-class-name: org.postgresql.Driver
+  hikari:
+    maximum-pool-size: 20
+    minimum-idle: 5
+    idle-timeout: 300000
+    connection-timeout: 30000
 
-Что нужно сделать:
-  - Указать настройки подключения к базе данных.
-  - Указать порт приложения.
-  - Настроить параметры безопасности и JWT.
-  - Включить Swagger UI.
+# JPA/Hibernate настройки
+jpa:
+  hibernate:
+    ddl-auto: none  # Используем только Liquibase
+  show-sql: true
+  properties:
+    hibernate:
+      format_sql: true
+      dialect: org.hibernate.dialect.PostgreSQLDialect
+  database-platform: org.hibernate.dialect.PostgreSQLDialect
+
+# Liquibase миграции
+liquibase:
+  enabled: true
+  change-log: classpath:db/changelog/db.changelog-master.yaml
+  default-schema: public
+  drop-first: false
+
+# Настройки безопасности
+security:
+  user:
+    name: admin
+    password: admin
+    roles: ADMIN
+
+# Jackson настройки для JSON
+jackson:
+  default-property-inclusion: NON_NULL
+  serialization:
+    write-dates-as-timestamps: false
+  time-zone: UTC
+
+# Настройки сервера
+server:
+  port: 8080
+  servlet:
+    context-path: /api
+  error:
+    include-message: always
+    include-binding-errors: always
+
+# Настройки JWT токенов
+jwt:
+  secret: mySecretKeyForBankCardsApplicationThatShouldBeVeryLongAndSecure2024!
+  expiration: 86400000
+  refresh-expiration: 2592000000
+  issuer: bankcards-app
+
+# Настройки шифрования
+encryption:
+  secret-key: myEncryptionSecretKey2024!
+  algorithm: AES
+
+# Настройки логирования
+logging:
+  level:
+    com.example.bankcards: DEBUG
+    org.springframework.security: DEBUG
+    org.hibernate.SQL: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+
+# Swagger/OpenAPI настройки
+springdoc:
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html

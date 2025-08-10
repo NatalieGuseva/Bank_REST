@@ -1,9 +1,49 @@
-# 
-# docker-compose.yml — определяет сервисы для разработки и тестирования.
+version: '3.8'
 
-Что нужно сделать:
-  - Настроить сервисы для:
-      - PostgreSQL (или MySQL) с начальной базой.
-      - Приложения Spring Boot (если нужно).
-  - Открыть нужные порты (например, 5432, 8080).
-  - Настроить volume для хранения данных БД.
+services:
+  # Сервис PostgreSQL
+  postgres:
+    image: postgres:15-alpine  # Используем легковесный образ PostgreSQL
+    container_name: bank_cards_db  # Имя контейнера
+    environment:
+      POSTGRES_DB: bankcards     # Название БД (как в application.yml)
+      POSTGRES_USER: postgres    # Пользователь (как в application.yml)
+      POSTGRES_PASSWORD: postgres  # Пароль (как в application.yml)
+    ports:
+      - "5432:5432"  # Открываем стандартный порт PostgreSQL
+    volumes:
+      - postgres_data:/var/lib/postgresql/data  # Постоянное хранилище для БД
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d bankcards"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - bank_network
+
+  # Сервис Spring Boot приложения
+  bank-cards-app:
+    build:
+      context: .  # Собираем из текущей директории
+      dockerfile: Dockerfile  # Используем этот Dockerfile
+    container_name: bank_cards_app
+    depends_on:
+      postgres:
+        condition: service_healthy  # Ждем пока БД станет доступной
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/bankcards  # Подключаемся к контейнеру postgres
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      SPRING_LIQUIBASE_ENABLED: "true"  # Включаем Liquibase миграции
+    ports:
+      - "8080:8080"  # Открываем порт приложения
+    networks:
+      - bank_network
+    restart: unless-stopped  # Автоматически перезапускать при падении
+
+volumes:
+  postgres_data:  # Том для хранения данных БД
+
+networks:
+  bank_network:  # Создаем отдельную сеть для сервисов
+    driver: bridge
